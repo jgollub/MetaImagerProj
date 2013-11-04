@@ -2,11 +2,11 @@
 % home
 % close all
 
-function [H F Az El Z] = measurement_matrix_build_3D_4port_12chan_vers4(dmin,dmax,nfreqs,Azmin,Azmax,Elmin,Elmax,data,ActivePanels,num_RFpaths)%filename)
+function [H F Az El Z] = measurement_matrix_build_3D_4port_12chan_allPolarizations(dmin,dmax,nfreqs,Azmin,Azmax,Elmin,Elmax,data,ActivePanels,num_RFpaths)%filename)
 %data offset 
 
 %switch number
-SwitchPos=find(Active_Panels(:));
+SwitchPos=find(ActivePanels(:));
 
 %assign variable, matrices, etc.
 
@@ -31,7 +31,6 @@ SwitchPos=find(Active_Panels(:));
     
     Az = Az(Elminind:Elmaxind,Azminind:Azmaxind); %%%
     El = El(Elminind:Elmaxind,Azminind:Azmaxind); %%%
-    
 nz = zindmax-zindmin+1;
 %Z = Z(indmin:indmax);
 
@@ -50,14 +49,12 @@ hornrad = ones(size(El)); %actually, let's just ignore the horn gain for now.
 nxy = size(Az,1)*size(Az,2);
 
 %initilize H with space for (6 RF channels x number of switches)
-H=zeros(length(F)*E_numswitches*sum(Active_Panels(:)),nxy*nz);
+H=zeros(length(F)*E_numswitches*sum(ActivePanels(:)),nxy*nz);
 
-for iSwitch=1:sum(Active_Panels(:))
+for iSwitch=1:sum(ActivePanels(:))
     %pull out reduced H matrix
-    E_PanReducedMtx=data{SwitchPos(iSwitch)}.Ex_Pan(Elminind:Elmaxind,Azminind:Azmaxind,zindmin:zindmax,1:length(k0),1:6);
-    
-    size(E_PanReducedMtx{iSwitch})
-    
+    E_PanReducedMtx=data{SwitchPos(iSwitch)}.Ey_Pan(Elminind:Elmaxind,Azminind:Azmaxind,zindmin:zindmax,1:length(k0),1:6);
+  
     for sn=1:num_RFpaths
         %         for zn=zindmin:zindmax;
         for zn=1:length(zindmin:zindmax)

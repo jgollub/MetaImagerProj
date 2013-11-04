@@ -4,9 +4,6 @@ function [ output_args ] = Deactivate_RFpath_L4445A( obj, switchNum)
 %but if you send a command to another switches this does not change the original 
 %switch back to all open---the last closed path remains so.
 
-if sum(switchNum(:))>1
-    error('more than one switch selected');
-end
 %build SCPI commands to control switches
 switch switchNum
     case 1
@@ -36,6 +33,11 @@ switch switchNum
 end
 
 fprintf(obj,['ROUT:CLOS ', switchCommand])
-query(obj,'*OPC?');
+
+%wait for command to finish
+while ~query(obj,'*OPC?');
+    pause(.001)
+end
+
 end
 

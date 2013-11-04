@@ -65,7 +65,7 @@ maxv=0;
         %subplot(ceil(sqrt(length(Z))),ceil(sqrt(length(Z))),nz)
         figure(7)
         subplot(ceil(length(Z)/2),2,nz)
-        imagesc(abs(obj3D(:,:,nz)),'Xdata',[Az(1,1) Az(1,end)].*180/pi,'YData',[El(end,1) El(1,1)].*180/pi) %unflipped !!!      
+        imagesc(abs(obj3D(:,:,nz)),'Xdata',[Az(1,1) Az(1,end)].*180/pi,'YData',[El(1,1) El(end,1)].*180/pi)      
         colormap jet
         %         colormap gray
         %axis equal

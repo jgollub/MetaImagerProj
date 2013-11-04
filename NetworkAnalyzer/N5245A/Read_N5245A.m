@@ -1,8 +1,7 @@
 function [data] = Read_N5245A(PNAX_obj, inputBufSize, s31orS32) %Assumes NAobj is already opened
 
-
- %select channel to sweep
- fprintf(PNAX_obj,['CALCulate:PARameter:SELect "', s31orS32,'" '])
+%select channel to sweep
+fprintf(PNAX_obj,['CALCulate:PARameter:SELect "', s31orS32,'" '])
  
 %trigger
 fprintf(PNAX_obj,'INIT:IMM')

@@ -16,7 +16,6 @@ function [ ] = Init_L4445A(obj)
  for j=1:2
      for i=0:7
          fprintf(obj,['ROUT:CLOS (@1',num2str(j), num2str(i),'7)'])
-         pause(.015)
      end
  end
 

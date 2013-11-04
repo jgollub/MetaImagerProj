@@ -27,7 +27,7 @@ function varargout = testGUI(varargin)
 
 % Edit the above text to modify the response to help testGUI
 
-% Last Modified by GUIDE v2.5 26-Oct-2013 20:04:30
+% Last Modified by GUIDE v2.5 01-Nov-2013 13:15:31
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -105,10 +105,7 @@ handles.range.BkGrnd_avg=2;
 set(handles.BkGrnd_avg,'String',num2str(handles.range.BkGrnd_avg));
 
 %initiate Pan A & B to 0 isstruct fails
-handles.dataA=0;
-handles.dataB=0;
-handles.dataALoaded=0;
-handles.dataBLoaded=0;
+handles.ActivePanels = zeros(4,3);
 
 %default number of frequency points
 handles.range.nfreqs=101;
@@ -135,6 +132,10 @@ set(handles.tol,'String',num2str(handles.range.tol));
 set(handles.ConstructImageButtonTag,'Visible','off'); 
 set(handles.tol,'String',num2str(handles.range.tol));
 
+handles.MeasMtxPathName='C:\Users\MetaImagerDuo\Documents\MetaImager Project\Measurement Matrix Data\12 Panel 1 Probe Oct 25';
+fprintf('%s%s\n','Current measurement matrix folder: ', handles.MeasMtxPathName);
+handles.calfilefPathName = 'C:\Users\MetaImagerDuo\Documents\MetaImager Project\RF Switch Path Calibration';
+fprintf('%s%s\n','Current cal file folder: ', handles.calfilefPathName);
 
 % Update handles structure
 guidata(hObject, handles);
@@ -202,7 +203,7 @@ end
 function azimuth_min_Callback(hObject, eventdata, handles)
 
 handles.azimuth_min_mc=str2double(get(hObject,'String'));
-if isnan(handles.azimuth_min)
+if isnan(handles.azimuth_min_mc)
   errordlg('You must enter a numeric value','Bad Input','modal')
   uicontrol(hObject)
 	%return
@@ -222,7 +223,7 @@ end
 function azimuth_max_Callback(hObject, eventdata, handles)
 
 handles.azimuth_max_mc=str2double(get(hObject,'String'));
-if isnan(handles.azimuth_max)
+if isnan(handles.azimuth_max_mc)
   errordlg('You must enter a numeric value','Bad Input','modal')
   uicontrol(hObject)
 	%return
@@ -238,9 +239,10 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function altitude_min_Callback(hObject, eventdata, handles)
+
 handles.altitude_min_mc=str2double(get(hObject,'String'));
 %check to see that entered value is a number
-if isnan(handles.altitude_min) 
+if isnan(handles.altitude_min_mc) 
   errordlg('You must enter a numeric value','Bad Input','modal')
   uicontrol(hObject)
 	%return
@@ -259,9 +261,9 @@ end
 
 function altitude_max_Callback(hObject, eventdata, handles)
 
-handles.altitude_max=str2double(get(hObject,'String'));
+handles.altitude_max_mc=str2double(get(hObject,'String'));
 %check to see that entered value is a number
-if isnan(handles.altitude_max) 
+if isnan(handles.altitude_max_mc) 
   errordlg('You must enter a numeric value','Bad Input','modal')
   uicontrol(hObject)
 	%return
@@ -365,10 +367,8 @@ drawnow
 % %reset abort button
 set(handles.AbortButtonTag,'UserData',0); 
 
-tic
-
 %%%%%%%%%%%%%%%%%%%%%
-
+tic
 if get(handles.Bistatic_Config,'Value')
 %     [handles.g] = acquire_Measurement_Bistatic(hObject,handles,handles.vobj_switch,handles.vobj_vna,handles.axes1,...
 %     handles.F,handles.num_RFpaths,handles.num_banks, handles.buffersize, handles.background);
@@ -377,10 +377,9 @@ if get(handles.Bistatic_Config,'Value')
     handles.F,handles.num_RFpaths,handles.num_banks, handles.buffersize, handles.background);
 else
     [handles.g] = acquire_Measurement(hObject,handles,handles.vobj_switch,handles.vobj_vna,handles.axes1,...
-    handles.F,handles.num_RFpaths,handles.num_banks, handles.buffersize, handles.background,handles.dataA,handles.dataB,handles.dataALoaded,handles.dataBLoaded);
+    handles.F,handles.ActivePanels,handles.num_RFpaths, handles.calData, handles.buffersize, handles.background);
 end
 fprintf('%s%3.2f%s\n', 'Measurement collected in ', toc, 'seconds.')
-tic
 
 %reconstruct
 fprintf('%s\n','Reconstructing image...')
@@ -406,66 +405,130 @@ set(handles.Save_add_to_file,'Visible','on');
 % --- Executes on button press in BackgroundButtonTag.
 function BackgroundButtonTag_Callback(hObject, eventdata, handles)
 
-%choose Calfile
-defaultCalFile=handles.range.calfile;
-handles.index_selected=get(handles.CalFile_listbox,'Value');
-handles.CalfileNames = get(handles.CalFile_listbox,'String');
-if isempty(handles.CalfileNames);
-    handles.range.calfile=defaultCalFile;
-else
-    handles.range.calfile = handles.CalfileNames{handles.index_selected};
+%%temp
+%ActivePanelsPosition=find(handles.ActivePanels);
+%load data files using default naming scheme
+handles.calData=[]; %data files
+    
+for i=1:length(handles.ActivePanels(:))
+    if handles.ActivePanels(i) == 1
+        filenameFragment=[char(65+floor(i/size(handles.ActivePanels,1))), num2str(mod(i,size(handles.ActivePanels,1)))];
+        fileName=dir([handles.calfilefPathName,'\',filenameFragment(1,:),'*.mat']);
+        handles.calData{i} = load([handles.calfilefPathName,'\',fileName.name]); %load data structure
+        fprintf('%s%s\n','Using cal files: ',[handles.calfilefPathName,'\',fileName.name]);
+    end
 end
+
+%choose Calfile
+% defaultCalFile=handles.range.calfile;
+% handles.index_selected=get(handles.CalFile_listbox,'Value');
+% handles.CalfileNames = get(handles.CalFile_listbox,'String');
+% if isempty(handles.CalfileNames);
+%     handles.range.calfile=defaultCalFile;
+% else
+%     handles.range.calfile = handles.CalfileNames{handles.index_selected};
+% end
 
 %reset abort button
 set(handles.AbortButtonTag,'UserData',0); 
 
-%use first panel to set frequency points
-firstPanel=find(handles.ActivePanels(:),1);
+%% what panels do we already have background meas for? do we even need to make any measurements?
 
-%select frequency points
-findexes = unique(round(linspace(1,length(handles.data{firstPanel .F),handles.range.nfreqs)));
-handles.F = handles.data{firstPanel}.F;
-handles.F=handles.F(1,findexes);
+fprintf('%s','Currently have backgrounds for panels: ')
+needtomeasbkg = false;
+for i=1:12
+    try 
+        havebkg = ~isempty(handles.backgroundData{i});
+    catch
+        havebkg = false;
+    end
 
-fsamples = length(handles.F);
-fstart = handles.F(1)/1E9;
-fstop = handles.F(end)/1E9;
+    if havebkg
+        [r, c]=ind2sub([4,3],i);
+        Cols = 'ABC';
+        fprintf('%s',[num2str(r),Cols(c),' '])
+    elseif handles.ActivePanels(i) && ~havebkg
+        needtomeasbkg = true;
+    end
+end
+fprintf('\n')
 
-%%% initialize instruments
- [handles.vobj_switch, handles.vobj_vna, handles.buffersize, handles.num_RFpaths, handles.ActivePanels]=...
-     initialize_MetaImager_Instr(fsamples, fstart, fstop,handles.range.IFbandwidth, handles.range.calfile);
+if ~needtomeasbkg
+    fprintf('%s\n','All needed backgrounds are measured.')
+else
+    fprintf('%s','Initializing VNA for background measurements...')
+    %use first panel to set frequency points
+    firstPanel=find(handles.ActivePanels(:),1);
 
- %%%%single panel only test !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
- %open VNA path to switches/horn
- 
- fprintf(handles.vobj_switch,'ROUT:CLOS (@1261,1271)')
- 
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- 
+    %select frequency points
+    findexes = unique(round(linspace(1,length(handles.data{firstPanel}.F),handles.range.nfreqs)));
+    handles.F = handles.data{firstPanel}.F;
+    handles.F=handles.F(1,findexes);
 
- %%%
- %get list of calibration files from VNA
- handles.CalfileNames=strsplit(strtok(query(handles.vobj_vna, 'CSET:CAT? '),'"'),',');
- set(handles.CalFile_listbox,'String',handles.CalfileNames);
+    fsamples = length(handles.F);
+    fstart = handles.F(1)/1E9;
+    fstop = handles.F(end)/1E9;
 
- fprintf('%s','Collecting background data...')
+    %%% initialize instruments
+    power=13; %hard setting power after cal reset (in dB)  
+    [handles.vobj_switch, handles.vobj_vna, handles.buffersize,handles.VNASweepFreqs]=...
+         initialize_MetaImager_Instr(fsamples, fstart, fstop,handles.range.IFbandwidth, power,handles.range.calfile);
 
- if get(handles.Bistatic_Config,'Value')
-% %     [handles.background]=...
-% %          measure_MetaImager_Background_Bistatic(hObject,handles,handles.vobj_switch,handles.vobj_vna, handles.axes1, handles.range.BkGrnd_avg,...
-% %          handles.F,handles.num_RFpaths,handles.num_banks, handles.buffersize,handles.dataA); 
+     %%%%single panel only test !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+     %open VNA path to horn
+
+     fprintf(handles.vobj_switch,'ROUT:CLOS (@1271)')
+
+     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+     %get list of calibration files from VNA
+     handles.CalfileNames=strsplit(strtok(query(handles.vobj_vna, 'CSET:CAT? '),'"'),',');
+     pause(1) %if no pause we see VNA error here
+     set(handles.CalFile_listbox,'String',handles.CalfileNames);
      
-     [handles.background]=...
-         measure_MetaImager_Background_Overlap_Bistatic(hObject,handles,handles.vobj_switch,handles.vobj_vna, handles.axes1, handles.range.BkGrnd_avg,...
-         handles.F,handles.num_RFpaths,handles.num_banks, handles.buffersize,handles.dataA); 
+     fprintf('%s\n','done.')
      
- else
-     [handles.background]=...
-         measure_MetaImager_Background(hObject,handles,handles.vobj_switch,handles.vobj_vna, handles.axes1, handles.range.BkGrnd_avg,...
-         handles.F, handles.ActivePanels, handles.num_RFpaths, handles.buffersize);
- end
+     fprintf('%s','Collecting background data...')
+
+     if get(handles.Bistatic_Config,'Value')
+    % %     [handles.background]=...
+    % %          measure_MetaImager_Background_Bistatic(hObject,handles,handles.vobj_switch,handles.vobj_vna, handles.axes1, handles.range.BkGrnd_avg,...
+    % %          handles.F,handles.num_RFpaths,handles.num_banks, handles.buffersize,handles.dataA); 
+
+         [handles.background]=...
+             measure_MetaImager_Background_Overlap_Bistatic(hObject,handles,handles.vobj_switch,handles.vobj_vna, handles.axes1, handles.range.BkGrnd_avg,...
+             handles.F,handles.num_RFpaths,handles.num_banks, handles.buffersize,handles.dataA); 
+
+     else
+         for i=1:length(handles.ActivePanels(:))
+            if handles.ActivePanels(i) == 1
+                try 
+                    nohavebkg = isempty(handles.backgroundData{i});
+                catch
+                    nohavebkg = true;
+                end
+
+                if nohavebkg
+                handles.backgroundData{i} = measure_MetaImager_Background(hObject,handles,handles.vobj_switch,handles.vobj_vna, handles.axes1, handles.range.BkGrnd_avg,...
+                                                handles.VNASweepFreqs, i, handles.num_RFpaths, handles.calData,handles.buffersize);
+                end
+            end
+         end
+     end
+     fprintf('%s\n','done.')
+end
+
+fprintf('%s','Compiling needed background measurments...')
+activepanelnum = 1;
+for i=1:length(handles.ActivePanels(:))
+    if handles.ActivePanels(i) == 1
+        handles.background(:,:,activepanelnum) = handles.backgroundData{i};
+        activepanelnum = activepanelnum+1;
+    end
+end
+fprintf('%s\n','done.')
+
 %Allow imaging button to be seen now 
- fprintf('%s\n','done')
 set(handles.BuildMeasMtrx,'Visible','on')
 
 %%%%%%%
@@ -575,47 +638,17 @@ function LoadMeasuredData_Callback(hObject, eventdata, handles)
 % --- Executes on button press in LoadMeasuredMatrix.
 
 %Load Measured(and propagated) Matrix Data
-handles.ActivePanels=[0 0 0; 1 0 0; 0 0 0; 0 0 0];
 
-FileSpec='C:\Users\MetaImagerDuo\Documents\MetaImager Project\Measurement Matrix Data';
-[fPath,fName,fExt]=fileparts(FileSpec);
-BackDir=cd;
-cd(fPath);
 
-[PathName] = uigetdir(fPath,'Select folder with measurement files (.mat)'); %open file finder window
-if (PathName==0) %cancel is pressed
+FileSpec='C:\Users\MetaImagerDuo\Documents\MetaImager Project\Measurement Matrix Data\12 Panel 1 Probe Oct 25';
+[handles.MeasMtxfPath,fName,fExt]=fileparts(FileSpec);
+BackDir=cd; 
+cd(handles.MeasMtxfPath);
+[handles.MeasMtxPathName] = uigetdir(handles.MeasMtxfPath,'Select folder with measurement files (.mat)'); %open file finder window
+if (handles.MeasMtxPathName==0) %cancel is pressed
     return;
 end
 cd(BackDir);
-
-%%temp
-
-%load data files using default naming scheme
-handles.data=[]; %data files
-
-if get(handles.LoadMtxIntoMemTag,'Value')
-    
-    for i=1:length(handles.ActivePanels(:))
-        if handles.ActivePanels(i) == 1
-            handles.data{i} = load( fullfile(PathName,['Panel_',char(65+floor(i/size(handles.ActivePanels,1))), num2str(mod(i,size(handles.ActivePanels,1))),'.mat'] )); %load data structure
-        end
-    end
-    
-else
-    for i=1:length(handles.ActivePanels(:))
-        if handles.ActivePanels(i) == 1
-            handles.data{i} = matfile( fullfile(PathName,['\Panel_',char(65+floor(i/size(handles.ActivePanels,1))), num2str(mod(i,size(handles.ActivePanels,1))),'.mat'] )); %load data structure
-        end
-    end  
-end
-
-% handles.dataALoaded=1;
-% %handles.dataA =dataA;
-% 
-% set(handles.MeasuredDataFile_PanelA,'ForegroundColor', [0 0 0]);
-% set(handles.MeasuredDataFile_PanelA,'String', FileName); %update filepath
-% 
-% fprintf('\n...Panel A Measured Propagation Matrix Loaded. \n');
 
 guidata(hObject, handles);
 
@@ -624,8 +657,11 @@ function BuildMeasMtrx_Callback(hObject, eventdata, handles)
 % hObject    handle to BuildMeasMtrx (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-%build measurement matrix
-fprintf('%s','Extracting Measurement Data...')
+%% load meas matrix path
+
+
+%% build measurement matrix
+fprintf('%s','Extracting measurement matrix data...')
 
 if get(handles.Bistatic_Config,'Value')
 % % 
@@ -636,13 +672,14 @@ if get(handles.Bistatic_Config,'Value')
 % %     handles.azimuth_min_mc*pi/180,handles.azimuth_max_mc*pi/180,...
 % %     -handles.altitude_max_mc*pi/180,-handles.altitude_min_mc*pi/180,...
 % %     handles.dataA,handles.dataB); %note data name change to handles.dataA.H from handles.dataA
+handles.H=[];
 
     [handles.H, F_dummy, handles.Az, handles.El, handles.Z] =...
     measurement_matrix_build_two_Overlap_Bistatic(...
     handles.rmin_mc,handles.rmax_mc,...
     handles.range.nfreqs,...
     handles.azimuth_min_mc*pi/180,handles.azimuth_max_mc*pi/180,...
-    -handles.altitude_max_mc*pi/180,-handles.altitude_min_mc*pi/180,...
+    handles.altitude_min_mc*pi/180,handles.altitude_max_mc*pi/180,...
     handles.dataA,handles.dataB); %note data name change to handles.dataA.H from handles.dataA
 
  %%%Correct for Phase propagation down horn (waveguide)
@@ -651,30 +688,22 @@ if get(handles.Bistatic_Config,'Value')
 
 else 
 
-%     [handles.H, F_dummy, handles.Az, handles.El, handles.Z] =...
-%     measurement_matrix_build_3D_4port_12chan_vers4(...
-%     handles.rmin_mc,handles.rmax_mc,...
-%     handles.range.nfreqs,...
-%     handles.azimuth_min_mc*pi/180,handles.azimuth_max_mc*pi/180,...
-%     -handles.altitude_max_mc*pi/180,-handles.altitude_min_mc*pi/180,...%%%% matrix flipped Bug here
-%     handles.dataA,handles.dataB,handles.dataALoaded,handles.dataBLoaded);
-
-    [handles.H, F_dummy, handles.Az, handles.El, handles.Z] =...
+    [handles.H, handles.F, handles.Az, handles.El, handles.Z] =...
     measurement_matrix_build_3D_4port_12chan_allPolarizations(...
     handles.rmin_mc,handles.rmax_mc,...
     handles.range.nfreqs,...
     handles.azimuth_min_mc*pi/180,handles.azimuth_max_mc*pi/180,...
-    -handles.altitude_max_mc*pi/180,-handles.altitude_min_mc*pi/180,...%%%% matrix flipped Bug here
+    handles.altitude_min_mc*pi/180,handles.altitude_max_mc*pi/180,...
     handles.data,handles.ActivePanels,handles.num_RFpaths);
 
-%now modify H to include specularity weighting
-[handles.H] = specular_reflection_matrix(handles.H,handles.F,handles.Az, handles.El,handles.Z,handles.range.specularity);
+    %now modify H to include specularity weighting
+    [handles.H] = specular_reflection_matrix(handles.H,handles.F,handles.Az, handles.El,handles.Z,handles.range.specularity);
 
 end
 %now modify H to include horn gain
 %[handles.H] = horn_gain_matrix(handles.H,handles.F,handles.Az, handles.El,handles.Z);
 
-fprintf('%s\n','done')
+fprintf('%s\n','done.')
  
 set(handles.ConstructImageButtonTag,'Visible','on');
 set(handles.BuildMeasMtrx,'Visible','off');
@@ -1040,7 +1069,7 @@ end
 % --- Executes on button press in Cre_cont_Kin.
 function Cre_cont_Kin_Callback(hObject, eventdata, handles)
 
-handles.context = mxNiCreateContext('C:\Users\Lab\Dropbox\MetaImager Project\Programming Scripts\Kinect\kinect-mex1.3-windows\[v1.3] for OpenNI Unstable Build for Windows v1.0.0.25\Config\SamplesConfig.xml');
+handles.context = mxNiCreateContext('C:\Users\MetaImagerDuo\Documents\GitHub\MetaImagerProj\Kinect\kinect-mex1.3-windows\[v1.3] for OpenNI Unstable Build for Windows v1.0.0.25\Config\SamplesConfig.xml');
 
 set(handles.Cre_cont_Kin,'Visible','off');
 set(handles.del_cont_kin,'Visible','on');
@@ -1162,17 +1191,18 @@ semilogy(abs(objfunc(2:end)-objfunc(1:(end-1))))
 % plot_range_slices(handles.obj3D,handles.Az,handles.El,handles.Z,3,1:size(handles.obj3D,3),'y')
 
 %plot rf scene on 3Doptical
-figure(10)
-if isfield(handles,'hrfsurface')
-    if ishghandle(handles.hrfsurface)
-        delete(handles.hrfsurface)
-    end
-end
-axes(handles.h3Dorfaxes)
-handles.hrfsurface = plot_recon_surface(handles.obj3D,handles.Az,handles.El,handles.Z,0,4);
+% figure(10)
+% if isfield(handles,'hrfsurface')
+%     if ishghandle(handles.hrfsurface)
+%         delete(handles.hrfsurface)
+%     end
+% end
+% axes(handles.h3Dorfaxes)
+% handles.hrfsurface = plot_recon_surface(handles.obj3D,handles.Az,handles.El,handles.Z,0,4);
 
 %plot rf scene alone
 
+figure(10)
 if isfield(handles,'hrfaxes')
     if ishghandle(handles.hrfaxes) 
         cla(handles.hrfaxes);
@@ -1248,3 +1278,192 @@ function CalFile_listbox_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in LoadCalFiles.
+function LoadCalFiles_Callback(hObject, eventdata, handles)
+% hObject    handle to LoadCalFiles (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+fprintf('Loading calibration files... \n');
+FileSpec='C:\Users\MetaImagerDuo\Documents\MetaImager Project\Measurement Matrix Data';
+[fPath,fName,fExt]=fileparts(FileSpec);
+BackDir=cd;
+cd(fPath);
+
+[handles.calfilefPathName] = uigetdir(fPath,'Select folder with calibration files'); %open file finder window
+if (handles.calfilefPathName==0) %cancel is pressed
+    return;
+end
+cd(BackDir);
+
+guidata(hObject, handles);
+
+
+% --- Executes on button press in checkboxA4.
+function checkboxA4_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxA4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.ActivePanels(4,1)=get(hObject,'Value');
+guidata(hObject, handles);
+preloadMeasMtx(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of checkboxA4
+
+
+% --- Executes on button press in checkboxA3.
+function checkboxA3_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxA3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.ActivePanels(3,1)=get(hObject,'Value');
+guidata(hObject, handles);
+preloadMeasMtx(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of checkboxA3
+
+
+% --- Executes on button press in checkboxA2.
+function checkboxA2_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxA2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.ActivePanels(2,1)=get(hObject,'Value');
+guidata(hObject, handles);
+preloadMeasMtx(hObject, eventdata, handles)
+%preloadMeasMtx(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of checkboxA2
+
+
+% --- Executes on button press in checkboxA1.
+function checkboxA1_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxA1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.ActivePanels(1,1)=get(hObject,'Value');
+guidata(hObject, handles);
+preloadMeasMtx(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of checkboxA1
+
+
+% --- Executes on button press in checkboxB4.
+function checkboxB4_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxB4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.ActivePanels(4,2)=get(hObject,'Value');
+guidata(hObject, handles);
+preloadMeasMtx(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of checkboxB4
+
+
+% --- Executes on button press in checkboxB3.
+function checkboxB3_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxB3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.ActivePanels(3,2)=get(hObject,'Value');
+guidata(hObject, handles);
+preloadMeasMtx(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of checkboxB3
+
+
+% --- Executes on button press in checkboxB2.
+function checkboxB2_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxB2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.ActivePanels(2,2)=get(hObject,'Value');
+guidata(hObject, handles);
+preloadMeasMtx(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of checkboxB2
+
+
+% --- Executes on button press in checkboxB1.
+function checkboxB1_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxB1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.ActivePanels(1,2)=get(hObject,'Value');
+guidata(hObject, handles);
+preloadMeasMtx(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of checkboxB1
+
+
+% --- Executes on button press in checkboxC4.
+function checkboxC4_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxC4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.ActivePanels(4,3)=get(hObject,'Value');
+guidata(hObject, handles);
+preloadMeasMtx(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of checkboxC4
+
+
+% --- Executes on button press in checkboxC3.
+function checkboxC3_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxC3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.ActivePanels(3,3)=get(hObject,'Value');
+guidata(hObject, handles);
+preloadMeasMtx(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of checkboxC3
+
+
+% --- Executes on button press in checkboxC2.
+function checkboxC2_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxC2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.ActivePanels(2,3)=get(hObject,'Value');
+guidata(hObject, handles);
+preloadMeasMtx(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of checkboxC2
+
+
+% --- Executes on button press in checkboxC1.
+function checkboxC1_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxC1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.ActivePanels(1,3)=get(hObject,'Value');
+guidata(hObject, handles);
+preloadMeasMtx(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of checkboxC1
+
+function preloadMeasMtx(hObject, eventdata, handles)
+
+%%temp
+%ActivePanelsPosition=find(handles.ActivePanels);
+%load data files using default naming scheme
+handles.data=[]; %data files
+fprintf('Loading files... \n');
+if 0%get(handles.LoadMtxIntoMemTag,'Value')
+    
+    for i=1:length(handles.ActivePanels(:))
+        if handles.ActivePanels(i) == 1
+            handles.data{i} = load( fullfile(handles.MeasMtxPathName,['Panel_',char(65+floor(i/size(handles.ActivePanels,1))), num2str(mod(i,size(handles.ActivePanels,1))),'.mat'] )); %load data structure
+        end
+    end
+    
+else
+    for i=1:length(handles.ActivePanels(:))
+        if handles.ActivePanels(i) == 1
+            filenameFragment=[char(65+floor(i/size(handles.ActivePanels,1))), num2str(mod(i,size(handles.ActivePanels,1)))];
+            fileName=dir([handles.MeasMtxPathName,'\',filenameFragment(1,:),'*.mat']);
+            handles.data{i} = matfile([handles.MeasMtxPathName,'\',fileName.name]); %load data structure
+            fprintf('%s\n',[handles.MeasMtxPathName,'\',fileName.name]);
+        end
+    end  
+end
+guidata(hObject, handles);
+fprintf('Loading finished\n');
+
+
+% --- Executes during object creation, after setting all properties.
+function LoadMtxIntoMemTag_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to LoadMtxIntoMemTag (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
