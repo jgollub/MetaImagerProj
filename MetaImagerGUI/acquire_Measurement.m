@@ -11,6 +11,7 @@ fprintf('%s','Collecting data...')
 SwitchPos=find(ActivePanels(:));
 
 for iSwitch=1:num_Switches
+    tic
     for sn1=1:num_RFpaths %cycle through s1 switches
         
         %collect data from VNA
@@ -29,6 +30,7 @@ for iSwitch=1:num_Switches
         plot(F,20.*log10(abs(g(:,sn1,iSwitch))),'-b')
         drawnow
     end
+    toc
     Deactivate_RFpath_L4445A( vobj_switch, SwitchPos(iSwitch)) %close all RF paths for switch---need to ensure nothing is open when moving to next switch
 end
 

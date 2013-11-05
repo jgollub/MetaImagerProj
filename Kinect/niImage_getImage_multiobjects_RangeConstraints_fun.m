@@ -1,15 +1,11 @@
-%before calling this function, create a Kinect context with:
-% context = mxNiCreateContext('C:\Users\Lab\Dropbox\MetaImager Project\Programming Scripts\Kinect\kinect-mex1.3-windows\[v1.3] for OpenNI Unstable Build for Windows v1.0.0.25\Config\SamplesConfig.xml');
-%be sure to delete the context with:
-% mxNiDeleteContext(context);
-%before creating a new one or you will have to
-%restart the computer to reestablish comm with Kinect.
+%before calling this function, initilize the Kinect context with:
+% [colorVid depthVid] = initializeKinect;
 
 % Get RGB and DEPTH image via Kinect
 %% Create context with xml file
 
-close all
-%function [Az_extent, El_extent, Z_extent, objs, xyz, xyzk, rgb] = niImage_getImage_multiobjects_RangeConstraints_fun(context)
+%close all
+function [Az_extent, El_extent, Z_extent, objs, xyz, rgb] = niImage_getImage_multiobjects_RangeConstraints_fun(colorVid, depthVid)
 
 
 %% define room boundaries in Metaimager coordinate system (meters)
@@ -22,13 +18,13 @@ room_zmin = 0;
 
 %% define Kinect position and orientation in Metaimager coordinate system
 %position of kinect (meters)
-px = 0.02;
+px = 0.05;
 py = 1.22+0.08;
 pz = 0.04-0.085;
 %kinect optical axis vector (zk vector). We assume that the Kinect is level (xk.y=0)
 %An easy way to do this is to measure the position of a point at the center
 %of the Kinect field of view and subtract the kinect position vector
-zkx = -0.01-px;
+zkx = 0.0501-px;
 zky = 0.36-py;
 zkz = 1.00-pz;
 
@@ -49,16 +45,18 @@ yky = yk(2);
 ykz = yk(3);
 
 %% collect a new image from the kinect
-option.adjust_view_point = true;
-mxNiUpdateContext(context,option);
-[rgb, depth] = mxNiImage(context,option);
-rgb = flipdim(rgb,2);
-xyz = double(mxNiConvertProjectiveToRealWorld(context, depth));
-xyz = xyz./1E3; %convert to meters
- 
+%option.adjust_view_point = true;
+%mxNiUpdateContext(context,option);
+%[rgb, depth] = mxNiImage(context,option);
+%rgb = flipdim(rgb,2);
+%xyz = double(mxNiConvertProjectiveToRealWorld(context, depth));
+%xyz = xyz./1E3; %convert to meters
+flushdata(colorVid,'all')
+[rgb, depth, xyz] = aquireKinect(colorVid, depthVid);
+
 %transform kinect coordinates to those of the RF coordinate system
 xyz = flipdim(xyz,2);
-xyzk = xyz;
+
 x = xyz(:,:,1);
 y = xyz(:,:,2);
 z = xyz(:,:,3);
@@ -191,44 +189,44 @@ end
 
 objs = objs==1;
 
-% %% plotting
-% % imagesc(Z)
+%% plotting
+% imagesc(Z)
 % figure;
 % objall = zeros(size(Z));
 % for n=1:size(objs,3)
 %     objall = objall+objs(:,:,n)*n;
 % end
 % imagesc(objall)
-
-subplot(2,3,1)
-imagesc(xyzk(:,:,1));axis equal
-subplot(2,3,2)
-imagesc(xyzk(:,:,2));axis equal
-subplot(2,3,3)
-imagesc(xyzk(:,:,3));axis equal
-
-subplot(2,3,4)
-imagesc(xyz(:,:,1));axis equal
-subplot(2,3,5)
-imagesc(xyz(:,:,2));axis equal
-subplot(2,3,6)
-imagesc(xyz(:,:,3));axis equal
-
-for n=1:Nobj
-    figure
-    obj = objs(:,:,n)==1; 
-    xyzo = xyz;
-    xyzo(~cat(3,cat(3,obj,obj),obj)) = NaN;
-    subplot(1,3,1)
-    imagesc(xyzo(:,:,1));axis equal
-    subplot(1,3,2)
-    imagesc(xyzo(:,:,2));axis equal
-    subplot(1,3,3)
-    imagesc(xyzo(:,:,3));axis equal
-end
-
-figure
-rgb2 = rgb;
-rgb2(repmat(abs(xyz(:,:,2))<0.005,[1,1,3]))=0;
-rgb2(240,320,1)=0;rgb2(240,320,2)=255;rgb2(240,320,3)=0;image(rgb2);
-imagesc(rgb2)
+% 
+% subplot(2,3,1)
+% imagesc(xyzk(:,:,1));axis equal
+% subplot(2,3,2)
+% imagesc(xyzk(:,:,2));axis equal
+% subplot(2,3,3)
+% imagesc(xyzk(:,:,3));axis equal
+% 
+% subplot(2,3,4)
+% imagesc(xyz(:,:,1));axis equal
+% subplot(2,3,5)
+% imagesc(xyz(:,:,2));axis equal
+% subplot(2,3,6)
+% imagesc(xyz(:,:,3));axis equal
+% 
+% for n=1:Nobj
+%     figure
+%     obj = objs(:,:,n)==1; 
+%     xyzo = xyz;
+%     xyzo(~cat(3,cat(3,obj,obj),obj)) = NaN;
+%     subplot(1,3,1)
+%     imagesc(xyzo(:,:,1));axis equal
+%     subplot(1,3,2)
+%     imagesc(xyzo(:,:,2));axis equal
+%     subplot(1,3,3)
+%     imagesc(xyzo(:,:,3));axis equal
+% end
+% 
+% figure
+% rgb2 = rgb;
+% rgb2(repmat(abs(xyz(:,:,2))<0.005,[1,1,3]))=0;
+% rgb2(240,320,1)=0;rgb2(240,320,2)=255;rgb2(240,320,3)=0;image(rgb2);
+% imagesc(rgb2)

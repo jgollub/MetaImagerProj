@@ -1069,10 +1069,9 @@ end
 % --- Executes on button press in Cre_cont_Kin.
 function Cre_cont_Kin_Callback(hObject, eventdata, handles)
 
-handles.context = mxNiCreateContext('C:\Users\MetaImagerDuo\Documents\GitHub\MetaImagerProj\Kinect\kinect-mex1.3-windows\[v1.3] for OpenNI Unstable Build for Windows v1.0.0.25\Config\SamplesConfig.xml');
+[handles.colorKinectVid, handles.depthKinectVid] = initializeKinect;
 
 set(handles.Cre_cont_Kin,'Visible','off');
-set(handles.del_cont_kin,'Visible','on');
 set(handles.Get_Kin_Extent,'Visible','on');
 % hObject    handle to Cre_cont_Kin (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1092,7 +1091,7 @@ set(handles.Get_Kin_Extent,'Visible','off');
 
 % --- Executes on button press in Get_Kin_Extent.
 function Get_Kin_Extent_Callback(hObject, eventdata, handles)
-[Az_extent_kc, El_extent_kc, Z_extent_kc, objs, xyz_kc, rgb] = niImage_getImage_multiobjects_RangeConstraints_fun(handles.context);
+[Az_extent, El_extent, Z_extent, objs, xyz, rgb] = niImage_getImage_multiobjects_RangeConstraints_fun(handles.colorKinectVid, handles.depthKinectVid);
 
 if isfield(handles,'nk')
     handles.newkinect = true;
@@ -1100,14 +1099,7 @@ if isfield(handles,'nk')
 else
     handles.nk = 1;
 end
-%define kinect offset from zero of RF coordinate
-kinect_offset_x = 0; %meters
-kinect_offset_y = 0.45; %meters 
-kinect_offset_z = (-0.54+0.15);%+4*0.0254; %distance from nearfield scan plane to kinect
 
-xyz_mc = xyz_kc;
-xyz_mc(:,:,2) = xyz_kc(:,:,2)+kinect_offset_y;
-xyz_mc(:,:,3) = xyz_kc(:,:,3)+kinect_offset_z;
 
 %plot kinect 3Doptical scene
 figure(10)
@@ -1128,36 +1120,25 @@ else
 end
 
 axes(handles.h3Dorfaxes)
-draw_Kinect_object_scene(xyz_mc,rgb,objs,1:size(objs,3))
+rgb = flipdim(rgb,2);
+draw_Kinect_object_scene(xyz,rgb,objs,1:size(objs,3))
 %draw_extent_box(Az_extent_kc,El_extent_kc,Z_extent_kc,2:nobj,[0 1 0])
 
 % range
-zminall_kc = min(Z_extent_kc(:,1));
-zmaxall_kc = max(Z_extent_kc(:,2));
+
 
 box_front_offset = -0.05;
-box_depth = 0.3;
-handles.rmin_mc = zminall_kc+kinect_offset_z+box_front_offset;
-handles.rmax_mc = zminall_kc+kinect_offset_z+box_depth;
+box_depth = 0.15;
+handles.rmin_mc = min(Z_extent(:,1))+box_front_offset;
+handles.rmax_mc = handles.rmin_mc+box_depth;
 
+handles.azimuth_min_mc = 180/pi*min(Az_extent(:,1));
+handles.azimuth_max_mc = 180/pi*max(Az_extent(:,2));
 
-%default azimuth angle
-xmin_mc = zminall_kc*tan(min(Az_extent_kc(:,1)))+kinect_offset_x;
-xmax_mc = zminall_kc*tan(max(Az_extent_kc(:,2)))+kinect_offset_x;
-azimuth_min_mc = (180/pi)*atan2(xmin_mc,handles.rmin_mc);
-azimuth_max_mc = (180/pi)*atan2(xmax_mc,handles.rmin_mc);
-handles.azimuth_max_mc = azimuth_max_mc;%sign and limit switched in order to account for matrix measurement build 
-handles.azimuth_min_mc = azimuth_min_mc;
+handles.altitude_min_mc = 180/pi*min(El_extent(:,1)); 
+handles.altitude_max_mc = 180/pi*max(El_extent(:,2)); 
 
-%verticle angle
-ymin_mc = zminall_kc*tan(min(El_extent_kc(:,1)))+kinect_offset_y;
-ymax_mc = zminall_kc*tan(max(El_extent_kc(:,2)))+kinect_offset_y;
-altitude_min_mc = (180/pi)*atan2(ymin_mc,handles.rmin_mc)-15; %
-altitude_max_mc = (180/pi)*atan2(ymax_mc,handles.rmin_mc);
-handles.altitude_max_mc = altitude_max_mc; 
-handles.altitude_min_mc = altitude_min_mc; 
-
-draw_extent_box([azimuth_min_mc azimuth_max_mc]*(pi/180),[altitude_min_mc altitude_max_mc]*(pi/180),[handles.rmin_mc handles.rmax_mc],1,[0 0 1],0)
+draw_extent_box([handles.azimuth_min_mc handles.azimuth_max_mc]*(pi/180),[handles.altitude_min_mc handles.altitude_max_mc]*(pi/180),[handles.rmin_mc handles.rmax_mc],1,[0 0 1],0)
 
 set(handles.rmin, 'String', num2str(handles.rmin_mc));
 set(handles.rmax, 'String', num2str(handles.rmax_mc));
@@ -1166,7 +1147,7 @@ set(handles.azimuth_max,'String',num2str(handles.azimuth_max_mc));
 set(handles.altitude_min,'String',num2str(handles.altitude_min_mc));
 set(handles.altitude_max,'String',num2str(handles.altitude_max_mc));
 
-handles.xyz_mc = xyz_mc;
+handles.xyz_mc = xyz;
 handles.rgb = rgb;
 handles.objs = objs;
 
@@ -1191,14 +1172,14 @@ semilogy(abs(objfunc(2:end)-objfunc(1:(end-1))))
 % plot_range_slices(handles.obj3D,handles.Az,handles.El,handles.Z,3,1:size(handles.obj3D,3),'y')
 
 %plot rf scene on 3Doptical
-% figure(10)
-% if isfield(handles,'hrfsurface')
-%     if ishghandle(handles.hrfsurface)
-%         delete(handles.hrfsurface)
-%     end
-% end
-% axes(handles.h3Dorfaxes)
-% handles.hrfsurface = plot_recon_surface(handles.obj3D,handles.Az,handles.El,handles.Z,0,4);
+figure(10)
+if isfield(handles,'hrfsurface')
+    if ishghandle(handles.hrfsurface)
+        delete(handles.hrfsurface)
+    end
+end
+axes(handles.h3Dorfaxes)
+handles.hrfsurface = plot_recon_surface(handles.obj3D,handles.Az,handles.El,handles.Z,0,4);
 
 %plot rf scene alone
 
