@@ -8,7 +8,9 @@
 
 function [colorVid depthVid] = initializeKinect
 
-colorVid = videoinput('kinect',1,'RGB_1280x960');
+
+colorVid = videoinput('kinect',1,);
+colorVid = videoinput('kinect',1,'RGB_640x480');
 %irVid = videoinput('kinect',1,'Infrared_640x480');
 depthVid = videoinput('kinect',2);
 

@@ -23,11 +23,13 @@ maxv=0;
 
     Hbasis =H;
     %% TV minimization
-    tic
     fprintf('%s','SVD calculation...')
+    tic
     S = svd(Hbasis,'econ');  %move up and out
-    fprintf('%s\n',['done after ' num2str(toc,'%3.1f'), 'seconds.'])
+    toc
+    fprintf('%s','SVD calculation...')
     renorm = (max(S)*(1+1e-5));
+    renorm = 0.014;
     Hbasis = Hbasis./renorm;
     g = g./renorm;
     lam = min(S)/max(S);
@@ -37,7 +39,6 @@ maxv=0;
     
     Phi = @(x) TVnorm_RI(x,size(El,1),size(Az,2),length(Z));
     Psi = @(x,tau) mycalltoTVnewMatrix_RI(x,tau,10,size(El,1),size(Az,2),length(Z)); % 10 is number of TV iterations per TwIST iterations
-    tic
     [obj obj_debias objfunc] = TwIST(g,Hbasis,reg,'lambda',lam,'ToleranceA',tol,'Verbose',0,'Phi',Phi,'Psi',Psi,'Monotone',0,'StopCriterion',1);
    
    % [obj obj_debias objfunc] = TwIST(g,Hbasis,reg,'lambda',lam,'ToleranceA',5E-9,'Verbose',0,'Phi',Phi,'Psi',Psi);

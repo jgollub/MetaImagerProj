@@ -57,6 +57,9 @@ function testGUI_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to testGUI (see VARARGIN)
 
+% kinect
+[handles.colorKinectVid, handles.depthKinectVid] = initializeKinect;
+
 % Choose default command line output for testGUI
 handles.output = hObject;
 
@@ -1066,29 +1069,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in Cre_cont_Kin.
-function Cre_cont_Kin_Callback(hObject, eventdata, handles)
-
-[handles.colorKinectVid, handles.depthKinectVid] = initializeKinect;
-
-set(handles.Cre_cont_Kin,'Visible','off');
-set(handles.Get_Kin_Extent,'Visible','on');
-% hObject    handle to Cre_cont_Kin (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-guidata(hObject, handles);
-
-% --- Executes on button press in del_cont_kin.
-function del_cont_kin_Callback(hObject, eventdata, handles)
-mxNiDeleteContext(handles.context)
-set(handles.Cre_cont_Kin,'Visible','on');
-set(handles.del_cont_kin,'Visible','off');
-set(handles.Get_Kin_Extent,'Visible','off');
-% hObject    handle to del_cont_kin (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
 % --- Executes on button press in Get_Kin_Extent.
 function Get_Kin_Extent_Callback(hObject, eventdata, handles)
 [Az_extent, El_extent, Z_extent, objs, xyz, rgb] = niImage_getImage_multiobjects_RangeConstraints_fun(handles.colorKinectVid, handles.depthKinectVid);
@@ -1122,6 +1102,7 @@ end
 axes(handles.h3Dorfaxes)
 rgb = flipdim(rgb,2);
 draw_Kinect_object_scene(xyz,rgb,objs,1:size(objs,3))
+%draw_Kinect_object_scene(xyz,rgb,objs,2)
 %draw_extent_box(Az_extent_kc,El_extent_kc,Z_extent_kc,2:nobj,[0 1 0])
 
 % range

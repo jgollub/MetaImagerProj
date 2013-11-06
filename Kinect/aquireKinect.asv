@@ -1,6 +1,6 @@
 %% KinectforWindows World xyz coordiantes
 
-function [rgb, depth, xyz] = aquireKinect(colorVid, depthVid)
+function [rgb, depth, xyz] = aquireKinect%(colorVid, depthVid)
 
 %preview(colorVid);
 
@@ -18,13 +18,9 @@ trigger([colorVid depthVid]);
 % Stop the devices
 stop([colorVid depthVid]);
 
-rgb = colorFrameData(:,:,:,1);
+rgb = colorFrameData(:,:,1,1);
 depth = double(depthFrameData(:,:,1,1))/1000;
-
-[px, py] = meshgrid(1:640,1:480);
-[pxi, pyi] = meshgrid(linspace(1,640,1280),linspace(1,480,960));
 depth(depth==0) = NaN;
-depth = interp2(px,py,depth,pxi,pyi,'nearest'); %need to use 'nearest' interpolation so that gaps between objects at different ranges dont get filled in 
 
 [xyz] = depthToWorldXYZ(depth);
 
@@ -35,7 +31,7 @@ fy_d = 1/5.9104053696870778E02;
 cx_d = 3.3930780975300314E02;
 cy_d = 2.4273913761751615E02;
 
-[px, py] = meshgrid(linspace(1,640,size(depth,2)),linspace(480,1,size(depth,1)));
+[px, py] = meshgrid(1:size(depth,2),size(depth,1):-1:1);
 
 xyz(:,:,1) = (px - cx_d).*depth*fx_d;
 xyz(:,:,2) = (py - cy_d).*depth*fy_d;
