@@ -935,7 +935,7 @@ if isfield(handles,'rgb')
 end
         
 %Load Measured(and propagated) Matrix Data
-FileSpec='C:\Users\Lab\Dropbox\MetaImager Project\MetaImager Data\MetaImager Scenes\2PanelTx_hornRx_Scene_Data\*.mat';
+FileSpec='D:\Dropbox\MetaImager Project\MetaImager Data\MetaImager Scenes\*.mat';
 [fPath,fName,fExt]=fileparts(FileSpec);
 BackDir=cd;
 cd(fPath);
@@ -1113,11 +1113,11 @@ box_depth = 0.15;
 handles.rmin_mc = min(Z_extent(:,1))+box_front_offset;
 handles.rmax_mc = handles.rmin_mc+box_depth;
 
-handles.azimuth_min_mc = 180/pi*min(Az_extent(:,1));
-handles.azimuth_max_mc = 180/pi*max(Az_extent(:,2));
+handles.azimuth_min_mc = 180/pi*min(Az_extent(:,1))-5;
+handles.azimuth_max_mc = 180/pi*max(Az_extent(:,2))+5;
 
-handles.altitude_min_mc = 180/pi*min(El_extent(:,1)); 
-handles.altitude_max_mc = 180/pi*max(El_extent(:,2)); 
+handles.altitude_min_mc = 180/pi*min(El_extent(:,1))-10; 
+handles.altitude_max_mc = 180/pi*max(El_extent(:,2))+10; 
 
 draw_extent_box([handles.azimuth_min_mc handles.azimuth_max_mc]*(pi/180),[handles.altitude_min_mc handles.altitude_max_mc]*(pi/180),[handles.rmin_mc handles.rmax_mc],1,[0 0 1],0)
 
