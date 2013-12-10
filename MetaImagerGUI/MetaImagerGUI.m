@@ -415,7 +415,23 @@ handles.calData=[]; %data files
     
 for i=1:length(handles.ActivePanels(:))
     if handles.ActivePanels(i) == 1
-        filenameFragment=[char(65+floor(i/size(handles.ActivePanels,1))), num2str(mod(i,size(handles.ActivePanels,1)))];
+        %determine number Character
+        if mod(i,size(handles.ActivePanels,1))==0
+            numChar=size(handles.ActivePanels,1);
+        else
+            numChar=mod(i,size(handles.ActivePanels,1));
+        end
+        
+        %determine letter char
+        if mod(i,size(handles.ActivePanels,1))==0
+            lettChar=65+(i/size(handles.ActivePanels,1))-1;
+        else
+            lettChar=65+floor(i/size(handles.ActivePanels,1));
+        end
+        
+        %filenameFragment=[char(65+floor(i/size(handles.ActivePanels,1))), num2str(mod(i,size(handles.ActivePanels,1)))];
+        %build filename
+        filenameFragment=[char(lettChar), num2str(numChar)];     
         fileName=dir([handles.calfilefPathName,'\',filenameFragment(1,:),'*.mat']);
         handles.calData{i} = load([handles.calfilefPathName,'\',fileName.name]); %load data structure
         fprintf('%s%s\n','Using cal files: ',[handles.calfilefPathName,'\',fileName.name]);
@@ -1057,7 +1073,7 @@ guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
-function notesTag_CreateFcn(hObject, eventdata, handles)
+function notesTag_CreateFcn(hObject, eventdata, ~)
 % hObject    handle to notesTag (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
@@ -1113,11 +1129,11 @@ box_depth = 0.15;
 handles.rmin_mc = min(Z_extent(:,1))+box_front_offset;
 handles.rmax_mc = handles.rmin_mc+box_depth;
 
-handles.azimuth_min_mc = 180/pi*min(Az_extent(:,1))-5;
-handles.azimuth_max_mc = 180/pi*max(Az_extent(:,2))+5;
+handles.azimuth_min_mc = 180/pi*min(Az_extent(:,1));
+handles.azimuth_max_mc = 180/pi*max(Az_extent(:,2));
 
-handles.altitude_min_mc = 180/pi*min(El_extent(:,1))-10; 
-handles.altitude_max_mc = 180/pi*max(El_extent(:,2))+10; 
+handles.altitude_min_mc = 180/pi*min(El_extent(:,1)); 
+handles.altitude_max_mc = 180/pi*max(El_extent(:,2)); 
 
 draw_extent_box([handles.azimuth_min_mc handles.azimuth_max_mc]*(pi/180),[handles.altitude_min_mc handles.altitude_max_mc]*(pi/180),[handles.rmin_mc handles.rmax_mc],1,[0 0 1],0)
 
@@ -1413,7 +1429,23 @@ if 0%get(handles.LoadMtxIntoMemTag,'Value')
 else
     for i=1:length(handles.ActivePanels(:))
         if handles.ActivePanels(i) == 1
-            filenameFragment=[char(65+floor(i/size(handles.ActivePanels,1))), num2str(mod(i,size(handles.ActivePanels,1)))];
+            %determine number Character
+           if mod(i,size(handles.ActivePanels,1))==0
+                numChar=size(handles.ActivePanels,1);
+            else
+                numChar=mod(i,size(handles.ActivePanels,1));
+            end
+            
+            %determine letter char
+            if mod(i,size(handles.ActivePanels,1))==0
+                lettChar=65+(i/size(handles.ActivePanels,1))-1;
+            else
+                lettChar=65+floor(i/size(handles.ActivePanels,1));
+            end
+            
+             %filenameFragment=[char(65+floor(i/size(handles.ActivePanels,1))), num2str(mod(i,size(handles.ActivePanels,1)))];
+             %build filename
+             filenameFragment=[char(lettChar), num2str(numChar)]; 
             fileName=dir([handles.MeasMtxPathName,'\',filenameFragment(1,:),'*.mat']);
             handles.data{i} = matfile([handles.MeasMtxPathName,'\',fileName.name]); %load data structure
             fprintf('%s\n',[handles.MeasMtxPathName,'\',fileName.name]);
