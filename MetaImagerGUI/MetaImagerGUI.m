@@ -966,7 +966,9 @@ set(handles.SavedFileName,'ForegroundColor', [1 0 0]);
 set(handles.SavedFileName,'String', '...Saving'); %update filepath
 
 %save data structure
+tic
 save(fullfile(handles.PathName,handles.FileName),'-struct','handles','scene_data');
+fprintf('%3.2f%s\n', toc, 'seconds.')
 
 %reset color after loading
 set(handles.SavedFileName,'ForegroundColor', [0 0 0]);
@@ -1125,15 +1127,15 @@ draw_Kinect_object_scene(xyz,rgb,objs,1:size(objs,3))
 
 
 box_front_offset = -0.05;
-box_depth = 0.15;
+box_depth = 0.65;
 handles.rmin_mc = min(Z_extent(:,1))+box_front_offset;
 handles.rmax_mc = handles.rmin_mc+box_depth;
 
 handles.azimuth_min_mc = 180/pi*min(Az_extent(:,1));
 handles.azimuth_max_mc = 180/pi*max(Az_extent(:,2));
 
-handles.altitude_min_mc = 180/pi*min(El_extent(:,1)); 
-handles.altitude_max_mc = 180/pi*max(El_extent(:,2)); 
+handles.altitude_min_mc = 180/pi*min(El_extent(:,1))+20; 
+handles.altitude_max_mc = 180/pi*max(El_extent(:,2))+2; 
 
 draw_extent_box([handles.azimuth_min_mc handles.azimuth_max_mc]*(pi/180),[handles.altitude_min_mc handles.altitude_max_mc]*(pi/180),[handles.rmin_mc handles.rmax_mc],1,[0 0 1],0)
 

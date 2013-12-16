@@ -24,24 +24,13 @@ upsample=1;
 slice=3;
 
 
-% %plot all panels at once
-% 
-tic
-%     fprintf('%s','SVD calculation...')
-    %S = svd(Hbasis,'econ');  %move up and out
-    opts.tol=1e-3;
-    S = svds(H,1,'L',opts)
-    while ~any(S) %PREVENTS svds from returning a null vector... not sure why it does this yet
-         opts.tol=opts.tol*1e-1
-         S = svds(H,1,'L',opts);
-    end
-    renorm = (max(S)*(1+1e-5))
+%plot all panels at once
 
-    Hp = H./renorm;
-    gp = g./renorm;
-    lam=1e-4 % hardcoded value for ill conditioned matrices --- should be updated as more info is gained about measurement matrices
-    %lam = min(S)/max(S)
-toc 
+S = svd(H,'econ');  
+Hp = H./(max(S));
+gp = g./(max(S));
+
+lam = min(S)/max(S);
 Phi = @(x) TVnorm_RI(x,size(El,1),size(Az,2),length(Z));
 Psi = @(x,tau) mycalltoTVnewMatrix_RI(x,tau,10,size(El,1),size(Az,2),length(Z));
 
@@ -106,7 +95,7 @@ figure(36)
 
 sumPlot=[];
 
-for i=1:12
+for i=1:3
     %% scene reconstruction
   Hpanel_i=H(1+freqs*RF_pathPerPanel*(i-1):freqs*RF_pathPerPanel*i,:);
  gpanel_i=g(1+freqs*RF_pathPerPanel*(i-1):freqs*RF_pathPerPanel*i,:);
@@ -144,46 +133,20 @@ end
 
 switch i
     case 1
-        plotpos=10;
-        plotPanLable='A1';
-    case 2
-        plotpos=7;
-        plotPanLable='A2';
-    case 3
-        plotpos=4;
-        plotPanLable='A3';
-    case 4
         plotpos=1;
         plotPanLable='A4';
-    case 5
-        plotpos=11;
-        plotPanLable='B1';
-    case 6
-        plotpos=8;
-        plotPanLable='B2';
-    case 7
-        plotpos=5;
-        plotPanLable='B3';
-    case 8
+    case 2
         plotpos=2;
         plotPanLable='B4';
-    case 9
-        plotpos=12;
-        plotPanLable='C1';
-    case 10
-        plotpos=9;
-        plotPanLable='C2';
-    case 11
-        plotpos=6;
-        plotPanLable='C3';
-    case 12
+    case 3
         plotpos=3;
         plotPanLable='C4';
 end
 
 figure(35)
-subplot(4,Num_figs,plotpos);
+subplot(1,3,plotpos);
 imagesc(tan(Az(1,:))*Z(slice),tan(El(:,1))*Z(slice),upsample_image(obj3D(:,:,slice),upsample));
+
 axis equal
 axis tight
 axis xy
@@ -201,9 +164,9 @@ figure(34)
 % set(gcf,'NextPlot','add')
 % hold on;
 if i==1
-    sumPlot=upsample_image(obj3D(:,:,slice),upsample)./Num_Panels;
+    sumPlot=upsample_image(obj3D(:,:,slice),upsample)./3;
 elseif i~1
-    sumPlot=sumPlot+upsample_image(obj3D(:,:,slice),upsample)./Num_Panels;
+    sumPlot=sumPlot+upsample_image(obj3D(:,:,slice),upsample)./3;
 end
 imagesc(tan(Az(1,:))*Z(slice),tan(El(:,1))*Z(slice),sumPlot);
 axis equal

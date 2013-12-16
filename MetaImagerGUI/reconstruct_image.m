@@ -24,14 +24,23 @@ maxv=0;
     Hbasis =H;
     %% TV minimization
     tic
-    fprintf('%s','SVD calculation...')
-    S = svd(Hbasis,'econ');  %move up and out
+%     fprintf('%s','SVD calculation...')
+    %S = svd(Hbasis,'econ');  %move up and out
+    opts.tol=1e-3;
+    S = svds(Hbasis,1,'L',opts)
+    while ~any(S) %PREVENTS svds from returning a null vector... not sure why it does this yet
+         opts.tol=opts.tol*1e-1
+         S = svds(Hbasis,1,'L',opts);
+    end
+    renorm = (max(S)*(1+1e-5))
+
     fprintf('%s\n',['done after ' num2str(toc,'%3.1f'), 'seconds.'])
-    renorm = (max(S)*(1+1e-5));
+ 
     Hbasis = Hbasis./renorm;
     g = g./renorm;
-    lam = min(S)/max(S);
-    
+    lam=1e-4 % hardcoded value for ill conditioned matrices --- should be updated as more info is gained about measurement matrices
+    %lam = min(S)/max(S)
+ 
     %figure(12)
     %plot(S);
     

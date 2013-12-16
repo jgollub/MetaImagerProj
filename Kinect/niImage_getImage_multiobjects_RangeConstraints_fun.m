@@ -9,7 +9,7 @@ function [Az_extent, El_extent, Z_extent, objs, xyz, rgb] = niImage_getImage_mul
 
 
 %% define room boundaries in Metaimager coordinate system (meters)
-room_ymin = -0.5;
+room_ymin = -0.75;
 room_ymax = 1.5;
 room_xmax = 0.9;
 room_xmin = -0.9;
