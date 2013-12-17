@@ -716,7 +716,7 @@ else
     handles.data,handles.ActivePanels,handles.num_RFpaths);
 
     %now modify H to include specularity weighting
-    [handles.H] = specular_reflection_matrix(handles.H,handles.F,handles.Az, handles.El,handles.Z,handles.range.specularity);
+    [handles.H] = specular_reflection_matrix(handles.H,handles.F,handles.Az,handles.El,handles.Z,handles.ActivePanels,handles.range.specularity);
 
 end
 %now modify H to include horn gain
@@ -1127,7 +1127,7 @@ draw_Kinect_object_scene(xyz,rgb,objs,1:size(objs,3))
 
 
 box_front_offset = -0.05;
-box_depth = 0.65;
+box_depth = 0.20;
 handles.rmin_mc = min(Z_extent(:,1))+box_front_offset;
 handles.rmax_mc = handles.rmin_mc+box_depth;
 
@@ -1267,7 +1267,7 @@ function LoadCalFiles_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 fprintf('Loading calibration files... \n');
-FileSpec='C:\Users\MetaImagerDuo\Documents\MetaImager Project\Measurement Matrix Data';
+FileSpec='C:\Users\MetaImagerDuo\Documents\MetaImager Project\RF Switch Path Calibration';
 [fPath,fName,fExt]=fileparts(FileSpec);
 BackDir=cd;
 cd(fPath);
